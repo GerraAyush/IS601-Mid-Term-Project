@@ -48,7 +48,7 @@ def test_repl_clear_then_exit(capsys):
     captured = capsys.readouterr()
     assert "Cleared history." in captured.out
 
-@pytest.mark.parametrize("cmd", ["undo", "redo", "save", "load"])
+@pytest.mark.parametrize("cmd", ["save", "load"])
 def test_repl_not_implemented_commands(cmd, capsys):
     inputs = iter([cmd, "exit"])
 
@@ -96,6 +96,70 @@ def test_repl_invalid_operand():
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
          pytest.raises(ValueError, match="Invalid operand value"):
         calculator_repl()
+
+def test_repl_undo_successful(capsys):
+    inputs = iter([
+        "add",
+        "2",
+        "3",
+        "undo",
+        "exit"
+    ])
+
+    with patch("builtins.input", side_effect=lambda _: next(inputs)), \
+         patch("sys.exit", side_effect=SystemExit):
+        with pytest.raises(SystemExit):
+            calculator_repl()
+    
+    captured = capsys.readouterr()
+    assert "Undo successful!" in captured.out
+
+def test_repl_no_undo(capsys):
+    inputs = iter([
+        "undo",
+        "exit"
+    ])
+
+    with patch("builtins.input", side_effect=lambda _: next(inputs)), \
+         patch("sys.exit", side_effect=SystemExit):
+        with pytest.raises(SystemExit):
+            calculator_repl()
+    
+    captured = capsys.readouterr()
+    assert "Nothing to undo" in captured.out
+
+def test_repl_redo_successful(capsys):
+    inputs = iter([
+        "add",
+        "2",
+        "3",
+        "undo",
+        "redo",
+        "exit"
+    ])
+
+    with patch("builtins.input", side_effect=lambda _: next(inputs)), \
+         patch("sys.exit", side_effect=SystemExit):
+        with pytest.raises(SystemExit):
+            calculator_repl()
+    
+    captured = capsys.readouterr()
+    print(captured.out)
+    assert "Redo successful!" in captured.out
+
+def test_repl_no_redo(capsys):
+    inputs = iter([
+        "redo",
+        "exit"
+    ])
+
+    with patch("builtins.input", side_effect=lambda _: next(inputs)), \
+         patch("sys.exit", side_effect=SystemExit):
+        with pytest.raises(SystemExit):
+            calculator_repl()
+    
+    captured = capsys.readouterr()
+    assert "Nothing to redo" in captured.out
 
 def test_repl_exit(capsys):
     inputs = iter(["exit"])

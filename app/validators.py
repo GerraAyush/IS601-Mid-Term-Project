@@ -3,6 +3,7 @@ from typing import Any
 
 # App Imports
 from app.datatypes import Number
+from app.exceptions import ValidationError
 
 class InputValidator:
     
@@ -13,6 +14,6 @@ class InputValidator:
             value = float(value) if '.' in value else int(value)
         
         if not isinstance(value, Number):
-            raise TypeError(f"Invalid value type: {type(value)}")
+            raise ValidationError(f"Invalid value type: {type(value)}")
         
         return value

@@ -38,10 +38,16 @@ def calculator_repl():
                 print("Cleared history.")
 
             case "undo":
-                print("Not implemented")
+                if calculator.undo():
+                    print("Undo successful!")
+                else:
+                    print("Nothing to undo")
 
             case "redo":
-                print("Not implemented")
+                if calculator.redo():
+                    print("Redo successful!")
+                else:
+                    print("Nothing to redo")
 
             case "save":
                 print("Not implemented")

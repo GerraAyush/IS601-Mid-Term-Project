@@ -3,6 +3,7 @@ import pytest
 
 # App Imports
 from app.validators import InputValidator
+from app.exceptions import ValidationError
 
 
 def test_validate_number_string_int():
@@ -21,5 +22,5 @@ def test_validate_number_float_passthrough():
     assert InputValidator.validate_number(2.5) == 2.5
 
 def test_validate_number_invalid_type():
-    with pytest.raises(TypeError, match="Invalid value type"):
+    with pytest.raises(ValidationError, match="Invalid value type"):
         InputValidator.validate_number([1, 2, 3])

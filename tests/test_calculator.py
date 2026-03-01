@@ -6,6 +6,7 @@ from unittest.mock import patch
 from app.calculator import Calculator
 from app.operation import Addition
 from app.calculation import Calculation
+from app.exceptions import OperationError
 
 
 @pytest.fixture
@@ -69,7 +70,7 @@ def test_clear_history(calculator, addition_op):
 def test_show_history_empty(calculator, capsys):
     calculator.show_history()
     captured = capsys.readouterr()
-    assert "No operations performed." in captured.out
+    assert "No operations in history." in captured.out
 
 def test_show_history_with_entries(calculator, addition_op, capsys):
     calculator.set_operation(addition_op)
@@ -85,5 +86,5 @@ def test_show_history_with_entries(calculator, addition_op, capsys):
 
 def test_perform_operation_without_strategy(calculator):
     with patch("app.calculator.InputValidator.validate_number", side_effect=[1, 2]):
-        with pytest.raises(AttributeError):
+        with pytest.raises(OperationError, match="No operation set"):
             calculator.perform_operation(1, 2)
