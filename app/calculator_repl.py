@@ -1,11 +1,12 @@
 # Python Modules
 import sys
 import logging
-from pathlib import Path
 
 # App Imports
-from app.operation import OperationFactory
 from app.calculator import Calculator
+from app.utils import get_project_root
+from app.operation import OperationFactory
+from app.calculator_config import CalculatorConfig
 from app.exceptions import ValidationError, OperationError
 from app.history import LoggingObserver, AutoSaveObserver
 
@@ -24,18 +25,8 @@ def print_operations():
 
 def calculator_repl():
     try:
-        project_root = Path(__file__).parent.parent
-        history_dir = project_root / "history"
-        history_file = history_dir / "calculator_history.csv"
-        log_dir = project_root / "logs"
-        log_file = log_dir / "calculator_log.log"
-
-        calculator = Calculator(
-            history_dir=history_dir, 
-            history_file=history_file,
-            log_dir=log_dir,
-            log_file=log_file
-        )
+        config = CalculatorConfig(base_dir=get_project_root())
+        calculator = Calculator(config)
         
         calculator.add_observer(LoggingObserver())
         calculator.add_observer(AutoSaveObserver(calculator))

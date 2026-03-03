@@ -9,6 +9,7 @@ from app.datatypes import Number
 from app.operation import OperationFactory
 from app.exceptions import OperationError
 
+
 @dataclass(frozen=True)
 class Calculation:
     _operation_name: str

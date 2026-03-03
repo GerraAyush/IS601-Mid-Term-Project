@@ -1,27 +1,50 @@
 # Python Modules
 import pytest
 import pandas as pd
-from unittest.mock import patch
+from pathlib import Path
+from unittest.mock import patch, PropertyMock
+from tempfile import TemporaryDirectory
 
 # App Imports
-from app.calculator import Calculator
 from app.operation import Addition
+from app.calculator import Calculator
 from app.calculation import Calculation
 from app.exceptions import OperationError
+from app.calculator_config import CalculatorConfig
 
 
 @pytest.fixture
-def calculator(tmp_path):
-    history_dir = tmp_path / "test_history"
-    log_dir = tmp_path / "test_logs"
+def calculator():
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
 
-    history_dir.mkdir()
-    log_dir.mkdir()
+        with patch.object(CalculatorConfig, 'log_dir', new_callable=PropertyMock) as mock_log_dir, \
+             patch.object(CalculatorConfig, 'log_file', new_callable=PropertyMock) as mock_log_file, \
+             patch.object(CalculatorConfig, 'history_dir', new_callable=PropertyMock) as mock_history_dir, \
+             patch.object(CalculatorConfig, 'history_file', new_callable=PropertyMock) as mock_history_file:
+            
+            mock_log_dir.return_value = temp_path / "logs"
+            mock_log_file.return_value = temp_path / "logs/calculator.log"
+            mock_history_dir.return_value = temp_path / "history"
+            mock_history_file.return_value = temp_path / "history/calculator_history.csv"
+            
+            yield Calculator(config=config)
 
-    history_file = history_dir / "calculator_history.csv"
-    log_file = log_dir / "calculator_logs.log"
+def test_calculator_initialization(calculator):
+    assert calculator.history == []
+    assert calculator.undo_stack == []
+    assert calculator.redo_stack == []
+    assert calculator.operation_strategy is None
 
-    return Calculator(history_dir=history_dir, history_file=history_file, log_dir=log_dir, log_file=log_file)
+@patch('app.calculator.logging.info')
+def test_logging_setup(logging_info_mock):
+    with patch.object(CalculatorConfig, 'log_dir', new_callable=PropertyMock) as mock_log_dir, \
+         patch.object(CalculatorConfig, 'log_file', new_callable=PropertyMock) as mock_log_file:
+        mock_log_dir.return_value = Path('/tmp/logs')
+        mock_log_file.return_value = Path('/tmp/logs/calculator.log')
+        calculator = Calculator(CalculatorConfig())
+        logging_info_mock.assert_any_call("Calculator initialized with configuration")
 
 @pytest.fixture
 def addition_op():
@@ -103,7 +126,7 @@ def test_perform_operation_without_strategy(calculator):
 
 def test_save_history_empty(calculator):
     calculator.save_history()
-    assert calculator.history_file.exists()
+    assert calculator.config.history_file.exists()
 
 def test_save_history_with_data(calculator):
     calculator.set_operation(Addition(cmd="add"))
@@ -112,12 +135,12 @@ def test_save_history_with_data(calculator):
         calculator.perform_operation(2, 3)
 
     calculator.save_history()
-    assert calculator.history_file.exists()
+    assert calculator.config.history_file.exists()
 
 def test_save_history_exception(calculator):
-    calculator.history_dir = "/invalid/path/that/should/fail"
-    with pytest.raises(OperationError, match="Failed to save history"):
-        calculator.save_history()
+    with patch("pandas.DataFrame.to_csv", side_effect=Exception("boom")):
+        with pytest.raises(OperationError, match="Failed to save history"):
+            calculator.save_history()
 
 def test_load_history_file_not_exists(calculator):
     calculator.load_history()

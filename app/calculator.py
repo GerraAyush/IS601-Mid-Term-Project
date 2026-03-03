@@ -2,20 +2,32 @@
 import os
 import logging
 import pandas as pd
-from typing import List, Any
+from typing import List, Any, Optional
 
 # App Imports
 from app.datatypes import Number
 from app.operation import Operation
+from app.utils import get_project_root
 from app.history import HistoryObserver
 from app.calculation import Calculation
 from app.validators import InputValidator
+from app.calculator_config import CalculatorConfig
 from app.calculator_memento import CalculatorMemento
 from app.exceptions import ValidationError, OperationError, ConfigurationError
 
+
 class Calculator:
-    def __init__(self, history_dir, history_file, log_dir, log_file):
-        self.operation_strategy = None
+    def __init__(self, config: Optional[CalculatorConfig] = None):
+        if config is None:
+            project_root = get_project_root()
+            config = CalculatorConfig(base_dir=project_root)
+
+        self.config = config
+        self.config.validate()
+
+        self._setup_directories()
+
+        self.operation_strategy: Optional[Operation] = None
         self.history: List[Calculation] = []
 
         self.undo_stack: List[CalculatorMemento] = []
@@ -23,32 +35,27 @@ class Calculator:
 
         self._observers: List[HistoryObserver] = []
 
-        self.history_file = history_file
-        self.history_dir = history_dir
-        self.log_dir = log_dir
-        self.log_file = log_file
-
         self._setup_logging()
 
-        self._setup_directories()
-
-        logging.info("Calculator initialized")
+        logging.info("Calculator initialized with configuration")
 
     def _setup_logging(self):
         try:
+            log_file = self.config.log_file.resolve()
+
             logging.basicConfig(
-                filename=str(self.log_file),
+                filename=str(log_file),
                 level=logging.INFO,
                 format='%(asctime)s - %(levelname)s - %(message)s',
                 force=True
             )
-            logging.info(f"Logging initialized at: {self.log_file}")
+            logging.info(f"Logging initialized at: {log_file}")
         except Exception as e:
             raise ConfigurationError(f"Configuration failed with error: {e}")
         
     def _setup_directories(self):
-        os.makedirs(self.history_dir, exist_ok=True)
-        os.makedirs(self.log_dir, exist_ok=True)
+        os.makedirs(self.config.history_dir, exist_ok=True)
+        os.makedirs(self.config.log_dir, exist_ok=True)
 
     def set_operation(self, operation_strategy: Operation):
         self.operation_strategy = operation_strategy
@@ -130,14 +137,12 @@ class Calculator:
 
     def save_history(self):
         try:
-            os.makedirs(self.history_dir, exist_ok=True)
-
             history_data = [calculation.to_dict() for calculation in self.history]
 
             if history_data:
                 df = pd.DataFrame(history_data)
-                df.to_csv(self.history_file, index=False)
-                logging.info(f"History saved successfully to {self.history_file}")
+                df.to_csv(self.config.history_file, index=False)
+                logging.info(f"History saved successfully to {self.config.history_file}")
             else:
                 pd.DataFrame(
                     columns=[
@@ -148,7 +153,7 @@ class Calculator:
                         'result', 
                         'timestamp'
                     ]
-                ).to_csv(self.history_file, index=False)
+                ).to_csv(self.config.history_file, index=False)
                 logging.info("Empty history saved")
 
         except Exception as e:
@@ -157,8 +162,8 @@ class Calculator:
         
     def load_history(self):
         try:
-            if self.history_file.exists():
-                df = pd.read_csv(self.history_file)
+            if self.config.history_file.exists():
+                df = pd.read_csv(self.config.history_file)
                 if not df.empty:
                     self.history = [
                         Calculation.from_dict({

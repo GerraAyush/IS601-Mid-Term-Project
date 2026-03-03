@@ -5,6 +5,7 @@ from typing import Any
 from app.datatypes import Number
 from app.exceptions import ValidationError
 
+
 class InputValidator:
     
     @staticmethod

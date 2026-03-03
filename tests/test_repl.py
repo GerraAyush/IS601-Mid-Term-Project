@@ -1,26 +1,34 @@
 # Python Modules
 import pytest
-from unittest.mock import patch
+from pathlib import Path
+from unittest.mock import patch, PropertyMock
+from tempfile import TemporaryDirectory
 
 # App Imports
 from app.operation import Addition
 from app.calculator import Calculator
+from app.calculator_config import CalculatorConfig
 from app.exceptions import OperationError, ValidationError
 from app.calculator_repl import calculator_repl, print_operations
 
 
 @pytest.fixture
-def calculator(tmp_path):
-    history_dir = tmp_path / "test_history"
-    log_dir = tmp_path / "test_logs"
+def calculator():
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        config = CalculatorConfig(base_dir=temp_path)
 
-    history_dir.mkdir()
-    log_dir.mkdir()
-
-    history_file = history_dir / "calculator_history.csv"
-    log_file = log_dir / "calculator_logs.log"
-
-    return Calculator(history_dir=history_dir, history_file=history_file, log_dir=log_dir, log_file=log_file)
+        with patch.object(CalculatorConfig, 'log_dir', new_callable=PropertyMock) as mock_log_dir, \
+             patch.object(CalculatorConfig, 'log_file', new_callable=PropertyMock) as mock_log_file, \
+             patch.object(CalculatorConfig, 'history_dir', new_callable=PropertyMock) as mock_history_dir, \
+             patch.object(CalculatorConfig, 'history_file', new_callable=PropertyMock) as mock_history_file:
+            
+            mock_log_dir.return_value = temp_path / "logs"
+            mock_log_file.return_value = temp_path / "logs/calculator.log"
+            mock_history_dir.return_value = temp_path / "history"
+            mock_history_file.return_value = temp_path / "history/calculator_history.csv"
+            
+            yield Calculator(config=config)
 
 def test_print_operations(capsys):
     print_operations()
@@ -108,7 +116,6 @@ def test_repl_valid_operation_add(capsys):
             calculator_repl()
 
     captured = capsys.readouterr()
-    print(captured)
     assert "Result: 5" in captured.out
 
 def test_repl_undo_successful(capsys):
