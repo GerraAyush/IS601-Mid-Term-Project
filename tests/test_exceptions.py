@@ -28,3 +28,4 @@ def test_raise_operation_error_caught_as_base():
 def test_raise_operation_error_specific():
     with pytest.raises(OperationError, match="specific"):
         raise OperationError("specific")
+    

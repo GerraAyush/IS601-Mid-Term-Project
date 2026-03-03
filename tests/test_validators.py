@@ -24,3 +24,4 @@ def test_validate_number_float_passthrough():
 def test_validate_number_invalid_type():
     with pytest.raises(ValidationError, match="Invalid value type"):
         InputValidator.validate_number([1, 2, 3])
+        

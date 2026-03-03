@@ -1,10 +1,12 @@
 # Datatypes
+from typing import Dict, Any
 from datetime import datetime
 from dataclasses import dataclass, field
 
 # App Imports
 from app.datatypes import Number
 from app.operation import OperationFactory
+from app.exceptions import OperationError
 
 @dataclass(frozen=True)
 class Calculation:
@@ -12,7 +14,7 @@ class Calculation:
     _operand1: Number
     _operand2: Number
 
-    _operation_cls: str = field(init=False)
+    _operation_class: str = field(init=False)
     _result: Number = field(init=False)
     _timestamp: datetime = field(default_factory=datetime.now)
 
@@ -21,7 +23,7 @@ class Calculation:
 
         object.__setattr__(
             self, 
-            '_operation_cls', 
+            '_operation_class', 
             str(operation)
         )
         object.__setattr__(
@@ -31,13 +33,14 @@ class Calculation:
         )
 
     def __str__(self) -> str:
-        return f"{self._operation_cls}({self._operand1}, {self._operand2}) = {self._result}"
+        return f"{self._operation_class}({self._operand1}, {self._operand2}) = {self._result}"
 
     def __repr__(self) -> str:
         return (
-            f"Calculation(operation='{self._operation_name}', "
+            f"Calculation(operation_name='{self._operation_name}', "
             f"operand1={self._operand1}, "
             f"operand2={self._operand2}, "
+            f"operation_class='{self._operation_class}', "
             f"result={self._result}, "
             f"timestamp='{self._timestamp.isoformat()}')"
         )
@@ -52,3 +55,25 @@ class Calculation:
             self._result == other._result
         )
 
+    def to_dict(self) -> Dict:
+        return {
+            'operation_name': self._operation_name,
+            'operand1': self._operand1,
+            'operand2': self._operand2,
+            'operation_class': self._operation_class,
+            'result': self._result,
+            'timestamp': self._timestamp.isoformat()
+        }
+    
+    @staticmethod
+    def from_dict(calculation_dict: Dict[str, Any]) -> 'Calculation':
+        try:
+            return Calculation(
+                _operation_name=calculation_dict['operation_name'],
+                _operand1=calculation_dict['operand1'],
+                _operand2=calculation_dict['operand2'],
+                _timestamp=calculation_dict['timestamp']
+            )
+        except Exception as e:
+            print(e)
+            raise OperationError(f"Operation failed: {str(e)}")

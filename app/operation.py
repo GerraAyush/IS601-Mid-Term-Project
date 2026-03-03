@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 
 # App Imports
 from app.datatypes import Number
+from app.exceptions import ValidationError
 
 
 @dataclass(frozen=True)
@@ -14,8 +15,9 @@ class Operation(metaclass=ABCMeta):
     def execute(self, a: Number, b: Number) -> Number:
         pass # pragma: no cover
 
-    def validate_operands(self, a: Number, b: Number) -> bool:
-        pass # pragma: no cover
+    def validate_operands(self, a: Number, b: Number) -> None:
+        if not isinstance(a, Number) or not isinstance(b, Number):
+            raise ValidationError()
     
     def __str__(self) -> str:
         return self.__class__.__name__
@@ -36,10 +38,10 @@ class Multiplication(Operation):
         return a * b
 
 class Division(Operation):
-    def validate_operands(self, a: Number, b: Number) -> bool:
+    def validate_operands(self, a: Number, b: Number) -> None:
+        super().validate_operands(a, b)
         if b == 0:
-            raise ValueError("Divisor cannot be zero.")
-        return super().validate_operands(a, b)
+            raise ValidationError("Divisor cannot be zero.")
     
     def execute(self, a: Number, b: Number) -> Number:
         self.validate_operands(a, b)
@@ -51,40 +53,40 @@ class Power(Operation):
         return a ** b
 
 class Root(Operation):
-    def validate_operands(self, a: Number, b: Number) -> bool:
+    def validate_operands(self, a: Number, b: Number) -> None:
+        super().validate_operands(a, b)
         if b == 0:
-            raise ValueError("Index cannot be zero.")
-        return super().validate_operands(a, b)
+            raise ValidationError("Index cannot be zero.")
     
     def execute(self, a: Number, b: Number) -> Number:
         self.validate_operands(a, b)
         return a ** (1 / b)
 
 class Modulus(Operation):
-    def validate_operands(self, a, b):
+    def validate_operands(self, a, b) -> None:
+        super().validate_operands(a, b)
         if b == 0:
-            raise ValueError("Divisor cannot be zero.")
-        return super().validate_operands(a, b)
+            raise ValidationError("Divisor cannot be zero.")
     
     def execute(self, a: Number, b: Number) -> Number:
         self.validate_operands(a, b)
         return a % b
     
 class IntegerDivision(Operation):
-    def validate_operands(self, a, b):
+    def validate_operands(self, a, b) -> None:
+        super().validate_operands(a, b)
         if b == 0:
-            raise ValueError("Divisor cannot be zero.")
-        return super().validate_operands(a, b)
+            raise ValidationError("Divisor cannot be zero.")
     
     def execute(self, a: Number, b: Number) -> Number:
         self.validate_operands(a, b)
         return a // b
     
 class Percentage(Operation):
-    def validate_operands(self, a, b):
+    def validate_operands(self, a, b) -> None:
+        super().validate_operands(a, b)
         if b == 0:
-            raise ValueError("Base cannot be zero.")
-        return super().validate_operands(a, b)
+            raise ValidationError("Base cannot be zero.")
     
     def execute(self, a: Number, b: Number) -> Number:
         self.validate_operands(a, b)
@@ -142,7 +144,7 @@ class OperationFactory:
     @classmethod
     def is_registered(cls, operation_name: str) -> bool:
         return operation_name.lower() in cls._operation_dict
-    
+
     @classmethod
     def register_operation(
         cls,

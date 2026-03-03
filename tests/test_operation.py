@@ -16,6 +16,7 @@ from app.operation import (
     AbsoluteDifference,
     OperationFactory,
 )
+from app.exceptions import ValidationError
 
 
 class CustomOp(Operation):
@@ -44,27 +45,27 @@ def test_operations_execute(op_cls, a, b, expected):
 
 def test_division_by_zero():
     op = Division(cmd="divide")
-    with pytest.raises(ValueError, match="Divisor cannot be zero"):
+    with pytest.raises(ValidationError, match="Divisor cannot be zero"):
         op.execute(5, 0)
 
 def test_root_index_zero():
     op = Root(cmd="root")
-    with pytest.raises(ValueError, match="Index cannot be zero"):
+    with pytest.raises(ValidationError, match="Index cannot be zero"):
         op.execute(9, 0)
 
 def test_modulus_index_zero():
     op = Modulus(cmd="modulus")
-    with pytest.raises(ValueError, match="Divisor cannot be zero"):
+    with pytest.raises(ValidationError, match="Divisor cannot be zero"):
         op.execute(9, 0)
 
 def test_integer_division_index_zero():
     op = IntegerDivision(cmd="idivide")
-    with pytest.raises(ValueError, match="Divisor cannot be zero"):
+    with pytest.raises(ValidationError, match="Divisor cannot be zero"):
         op.execute(9, 0)
 
 def test_percentage_index_zero():
     op = Percentage(cmd="percentage")
-    with pytest.raises(ValueError, match="Base cannot be zero"):
+    with pytest.raises(ValidationError, match="Base cannot be zero"):
         op.execute(9, 0)
 
 def test_operation_str():
@@ -118,3 +119,4 @@ def test_list_operations_returns_string():
 def test_validate_operands_default_returns_none():
     op = Addition(cmd="add")
     assert op.validate_operands(1, 2) is None
+    

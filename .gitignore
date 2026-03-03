@@ -31,6 +31,7 @@ ENV/
 # Calculator-specific files
 logs/
 history/
+test_history/
 *.log
 *.csv
 calculator_history.*

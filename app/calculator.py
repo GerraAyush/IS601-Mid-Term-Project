@@ -1,4 +1,6 @@
 # Datatypes
+import os
+import pandas as pd
 from typing import List, Any
 
 # App Imports
@@ -10,12 +12,15 @@ from app.calculator_memento import CalculatorMemento
 from app.exceptions import ValidationError, OperationError
 
 class Calculator:
-    def __init__(self):
+    def __init__(self, history_dir, history_file):
         self.operation_strategy = None
         self.history: List[Calculation] = []
 
         self.undo_stack: List[CalculatorMemento] = []
         self.redo_stack: List[CalculatorMemento] = []
+
+        self.history_file = history_file
+        self.history_dir = history_dir
 
     def set_operation(self, operation_strategy: Operation):
         self.operation_strategy = operation_strategy
@@ -74,3 +79,47 @@ class Calculator:
             raise
         except Exception as e:
             raise OperationError(f"Operation failed: {str(e)}")
+        
+    def save_history(self):
+        try:
+            os.makedirs(self.history_dir, exist_ok=True)
+
+            history_data = [calculation.to_dict() for calculation in self.history]
+
+            if history_data:
+                df = pd.DataFrame(history_data)
+                df.to_csv(self.history_file, index=False)
+            else:
+                pd.DataFrame(
+                    columns=[
+                        'operation_name', 
+                        'operand1', 
+                        'operand2', 
+                        'operation_class',
+                        'result', 
+                        'timestamp'
+                    ]
+                ).to_csv(self.history_file, index=False)
+
+        except Exception as e:
+            raise OperationError(f"Failed to save history: {e}")
+        
+    def load_history(self):
+        try:
+            if self.history_file.exists():
+                df = pd.read_csv(self.history_file)
+                if not df.empty:
+                    self.history = [
+                        Calculation.from_dict({
+                            'operation_name': row['operation_name'],
+                            'operand1': row['operand1'],
+                            'operand2': row['operand2'],
+                            'operation_class': row['operation_class'],
+                            'result': row['result'],
+                            'timestamp': row['timestamp']
+                        })
+                        for _, row in df.iterrows()
+                    ]
+        except Exception as e:
+            raise OperationError(f"Failed to load history: {e}")
+        
