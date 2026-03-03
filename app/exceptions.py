@@ -7,5 +7,5 @@ class OperationError(CalculatorError):
 class ValidationError(CalculatorError):
     pass
 
-class OperationError(CalculatorError):
+class ConfigurationError(CalculatorError):
     pass

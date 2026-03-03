@@ -9,12 +9,19 @@ from app.operation import Addition
 from app.calculation import Calculation
 from app.exceptions import OperationError
 
-HISTORY_DIR="test_history"
-HISTORY_FILE="calculator_history.csv"
 
 @pytest.fixture
-def calculator():
-    return Calculator(history_dir=HISTORY_DIR, history_file=HISTORY_FILE)
+def calculator(tmp_path):
+    history_dir = tmp_path / "test_history"
+    log_dir = tmp_path / "test_logs"
+
+    history_dir.mkdir()
+    log_dir.mkdir()
+
+    history_file = history_dir / "calculator_history.csv"
+    log_file = log_dir / "calculator_logs.log"
+
+    return Calculator(history_dir=history_dir, history_file=history_file, log_dir=log_dir, log_file=log_file)
 
 @pytest.fixture
 def addition_op():
@@ -94,57 +101,29 @@ def test_perform_operation_without_strategy(calculator):
         with pytest.raises(OperationError, match="No operation set"):
             calculator.perform_operation(1, 2)
 
-def test_save_history_empty(tmp_path):
-    history_dir = tmp_path / "history"
-    history_file = history_dir / "file.csv"
+def test_save_history_empty(calculator):
+    calculator.save_history()
+    assert calculator.history_file.exists()
 
-    calc = Calculator(history_dir=history_dir, history_file=history_file)
-    calc.save_history()
-
-    assert history_file.exists()
-
-def test_save_history_with_data(tmp_path):
-    history_dir = tmp_path / "history"
-    history_file = history_dir / "file.csv"
-
-    calc = Calculator(history_dir=history_dir, history_file=history_file)
-    calc.set_operation(Addition(cmd="add"))
+def test_save_history_with_data(calculator):
+    calculator.set_operation(Addition(cmd="add"))
 
     with patch("app.calculator.InputValidator.validate_number", side_effect=[2, 3]):
-        calc.perform_operation(2, 3)
+        calculator.perform_operation(2, 3)
 
-    calc.save_history()
+    calculator.save_history()
+    assert calculator.history_file.exists()
 
-    assert history_file.exists()
-
-def test_save_history_exception(tmp_path):
-    from app.exceptions import OperationError
-
-    history_dir = tmp_path / "history"
-    history_file = history_dir / "file.csv"
-
-    calc = Calculator(history_dir=history_dir, history_file=history_file)
-
-    calc.history_dir = "/invalid/path/that/should/fail"
-
+def test_save_history_exception(calculator):
+    calculator.history_dir = "/invalid/path/that/should/fail"
     with pytest.raises(OperationError, match="Failed to save history"):
-        calc.save_history()
+        calculator.save_history()
 
-def test_load_history_file_not_exists(tmp_path):
-    history_dir = tmp_path / "history"
-    history_file = history_dir / "file.csv"
+def test_load_history_file_not_exists(calculator):
+    calculator.load_history()
+    assert calculator.history == []
 
-    calc = Calculator(history_dir=history_dir, history_file=history_file)
-    calc.load_history()
-
-    assert calc.history == []
-
-def test_load_history_with_data(tmp_path):
-    history_dir = tmp_path / "history"
-    history_file = history_dir / "file.csv"
-
-    calc = Calculator(history_dir=history_dir, history_file=history_file)
-
+def test_load_history_with_data(calculator):
     df = pd.DataFrame([{
         "operation_name": "add",
         "operand1": 2,
@@ -160,31 +139,22 @@ def test_load_history_with_data(tmp_path):
 
         mock_from_dict.return_value = "mocked_calc"
 
-        calc.load_history()
+        calculator.load_history()
 
-        assert calc.history == ["mocked_calc"]
+        assert calculator.history == ["mocked_calc"]
 
-def test_load_history_exception(tmp_path):
-    history_dir = tmp_path / "history"
-    history_file = history_dir / "file.csv"
-
-    calc = Calculator(history_dir=history_dir, history_file=history_file)
-
+def test_load_history_exception(calculator):
     with patch("app.calculator.pd.read_csv", side_effect=Exception("boom")), \
          patch("pathlib.Path.exists", return_value=True):
 
         with pytest.raises(OperationError, match="Failed to load history"):
-            calc.load_history()
+            calculator.load_history()
 
-def test_perform_operation_wraps_exception(tmp_path):
-    history_dir = tmp_path / "history"
-    history_file = history_dir / "file.csv"
-
-    calc = Calculator(history_dir=history_dir, history_file=history_file)
-    calc.set_operation(Addition(cmd="add"))
+def test_perform_operation_wraps_exception(calculator):
+    calculator.set_operation(Addition(cmd="add"))
 
     with patch("app.calculator.InputValidator.validate_number", side_effect=[2, 3]), \
          patch("app.operation.Addition.execute", side_effect=Exception("boom")):
 
         with pytest.raises(OperationError, match="Operation failed: boom"):
-            calc.perform_operation(2, 3)
+            calculator.perform_operation(2, 3)

@@ -1,4 +1,5 @@
 # Datatypes
+import logging
 from typing import Dict, Any
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -66,14 +67,20 @@ class Calculation:
         }
     
     @staticmethod
-    def from_dict(calculation_dict: Dict[str, Any]) -> 'Calculation':
+    def from_dict(data_dict: Dict[str, Any]) -> 'Calculation':
         try:
-            return Calculation(
-                _operation_name=calculation_dict['operation_name'],
-                _operand1=calculation_dict['operand1'],
-                _operand2=calculation_dict['operand2'],
-                _timestamp=calculation_dict['timestamp']
+            calculation = Calculation(
+                _operation_name=data_dict['operation_name'],
+                _operand1=data_dict['operand1'],
+                _operand2=data_dict['operand2'],
+                _timestamp=datetime.fromisoformat(data_dict['timestamp'])
             )
+            if calculation._result != data_dict["result"]:
+                logging.warning(
+                    f"Loaded calculation result {data_dict['result']} "
+                    f"differs from computed result {calculation._result}"
+                )
+            return calculation
+
         except Exception as e:
-            print(e)
             raise OperationError(f"Operation failed: {str(e)}")

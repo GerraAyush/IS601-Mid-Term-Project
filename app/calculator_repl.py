@@ -1,11 +1,14 @@
 # Python Modules
 import sys
+import logging
 from pathlib import Path
 
 # App Imports
 from app.operation import OperationFactory
 from app.calculator import Calculator
 from app.exceptions import ValidationError, OperationError
+from app.history import LoggingObserver, AutoSaveObserver
+
 
 def print_operations():
     print("Available commands:")
@@ -24,7 +27,18 @@ def calculator_repl():
         project_root = Path(__file__).parent.parent
         history_dir = project_root / "history"
         history_file = history_dir / "calculator_history.csv"
-        calculator = Calculator(history_dir=history_dir, history_file=history_file)
+        log_dir = project_root / "logs"
+        log_file = log_dir / "calculator_log.log"
+
+        calculator = Calculator(
+            history_dir=history_dir, 
+            history_file=history_file,
+            log_dir=log_dir,
+            log_file=log_file
+        )
+        
+        calculator.add_observer(LoggingObserver())
+        calculator.add_observer(AutoSaveObserver(calculator))
 
         print("Welcome! I will help with Math. Dumbo.")
         print_operations()
@@ -98,11 +112,14 @@ def calculator_repl():
 
             except KeyboardInterrupt:
                 print("\nOperation cancelled")
+                logging.info("Operation cancelled")
                 continue
             except EOFError:
                 print("\nInput terminated. Exiting...")
+                logging.info("Input terminated. Exiting...")
                 break
     
     except Exception as e:
         print(f"Fatal error: {e}")
+        logging.error(f"Fatal error in calculator REPL: {e}")
         raise

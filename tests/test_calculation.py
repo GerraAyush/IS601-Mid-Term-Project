@@ -6,7 +6,6 @@ from unittest.mock import patch
 # App Imports
 from app.calculation import Calculation
 from app.exceptions import OperationError
-from app.datatypes import Number
 
 
 class FakeOperation:
@@ -98,7 +97,7 @@ def test_from_dict():
     assert calculation._operand2 == 3
     assert calculation._result == 5
     assert calculation._operation_class == "Addition"
-    assert calculation._timestamp == data["timestamp"]
+    assert calculation._timestamp == datetime.fromisoformat(data["timestamp"])
 
 def test_invalid_from_dict():
     data = {

@@ -32,6 +32,7 @@ ENV/
 logs/
 history/
 test_history/
+test_logs/
 *.log
 *.csv
 calculator_history.*
