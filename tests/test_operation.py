@@ -59,12 +59,12 @@ def test_modulus_index_zero():
         op.execute(9, 0)
 
 def test_integer_division_index_zero():
-    op = IntegerDivision(cmd="idivide")
+    op = IntegerDivision(cmd="int_divide")
     with pytest.raises(ValidationError, match="Divisor cannot be zero"):
         op.execute(9, 0)
 
 def test_percentage_index_zero():
-    op = Percentage(cmd="percentage")
+    op = Percentage(cmd="percent")
     with pytest.raises(ValidationError, match="Base cannot be zero"):
         op.execute(9, 0)
 

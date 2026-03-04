@@ -166,14 +166,7 @@ class Calculator:
                 df = pd.read_csv(self.config.history_file)
                 if not df.empty:
                     self.history = [
-                        Calculation.from_dict({
-                            'operation_name': row['operation_name'],
-                            'operand1': row['operand1'],
-                            'operand2': row['operand2'],
-                            'operation_class': row['operation_class'],
-                            'result': row['result'],
-                            'timestamp': row['timestamp']
-                        })
+                        Calculation.from_dict(row.to_dict())
                         for _, row in df.iterrows()
                     ]
                     logging.info(f"Loaded {len(self.history)} calculations from history")

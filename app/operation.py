@@ -127,15 +127,15 @@ class OperationFactory:
             '_cls' : Modulus,
             'desc' : 'check divisibility of a wrt b',
         },
-        'idivide' : {
+        'int_divide' : {
             '_cls' : IntegerDivision,
             'desc' : 'perform integer division of a by b',
         },
-        'percentage' : {
+        'percent' : {
             '_cls' : Percentage,
             'desc' : 'check how much percent of b is a',
         },
-        'abs-diff' : {
+        'abs_diff' : {
             '_cls' : AbsoluteDifference,
             'desc' : 'perform absolute difference of a and b',
         }

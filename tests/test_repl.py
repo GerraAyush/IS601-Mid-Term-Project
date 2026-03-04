@@ -41,61 +41,58 @@ def test_print_operations(capsys):
     assert "power - perform a to the power of b" in captured.out
     assert "root - perform bth root of a" in captured.out
     assert "modulus - check divisibility of a wrt b" in captured.out
-    assert "idivide - perform integer division of a by b" in captured.out
-    assert "percentage - check how much percent of b is a" in captured.out
-    assert "abs-diff - perform absolute difference of a and b" in captured.out
+    assert "int_divide - perform integer division of a by b" in captured.out
+    assert "percent - check how much percent of b is a" in captured.out
+    assert "abs_diff - perform absolute difference of a and b" in captured.out
     assert "exit - Exit the calculator" in captured.out
 
-def test_repl_help_then_exit():
+def test_repl_help_then_exit(calculator):
     inputs = iter(["help", "exit"])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
 
-def test_repl_history_then_exit():
+def test_repl_history_then_exit(calculator):
     inputs = iter(["history", "exit"])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
 
-def test_repl_clear_then_exit(capsys):
+def test_repl_clear_then_exit(calculator, capsys):
     inputs = iter(["clear", "exit"])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
 
     captured = capsys.readouterr()
     assert "Cleared history." in captured.out
 
-def test_clear_history_clears_stacks(calculator, mocker):
+def test_clear_history_clears_stacks(calculator):
     calculator.set_operation(Addition(cmd="add"))
 
-    mocker.patch(
-        "app.calculator.InputValidator.validate_number",
-        side_effect=[2, 3]
-    )
+    with patch("app.calculator.InputValidator.validate_number", side_effect=[2, 3]):
+        calculator.perform_operation(2, 3)
+        assert len(calculator.undo_stack) == 1
+        calculator.clear_history()
+        assert calculator.history == []
+        assert calculator.undo_stack == []
+        assert calculator.redo_stack == []
 
-    calculator.perform_operation(2, 3)
-
-    assert len(calculator.undo_stack) == 1
-
-    calculator.clear_history()
-
-    assert calculator.history == []
-    assert calculator.undo_stack == []
-    assert calculator.redo_stack == []
-
-def test_repl_invalid_operation(capsys):
+def test_repl_invalid_operation(calculator, capsys):
     inputs = iter(["invalid_cmd", "exit"])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
 
@@ -111,14 +108,14 @@ def test_repl_valid_operation_add(capsys):
     ])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit):
         with pytest.raises(SystemExit):
             calculator_repl()
 
     captured = capsys.readouterr()
     assert "Result: 5" in captured.out
 
-def test_repl_undo_successful(capsys):
+def test_repl_undo_successful(calculator, capsys):
     inputs = iter([
         "add",
         "2",
@@ -128,28 +125,30 @@ def test_repl_undo_successful(capsys):
     ])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
     
     captured = capsys.readouterr()
     assert "Undo successful!" in captured.out
 
-def test_repl_no_undo(capsys):
+def test_repl_no_undo(calculator, capsys):
     inputs = iter([
         "undo",
         "exit"
     ])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
     
     captured = capsys.readouterr()
     assert "Nothing to undo" in captured.out
 
-def test_repl_redo_successful(capsys):
+def test_repl_redo_successful(calculator, capsys):
     inputs = iter([
         "add",
         "2",
@@ -160,21 +159,23 @@ def test_repl_redo_successful(capsys):
     ])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
     
     captured = capsys.readouterr()
     assert "Redo successful!" in captured.out
 
-def test_repl_no_redo(capsys):
+def test_repl_no_redo(calculator, capsys):
     inputs = iter([
         "redo",
         "exit"
     ])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
     
@@ -187,49 +188,38 @@ def test_undo_empty_stack(calculator):
 def test_redo_empty_stack(calculator):
     assert calculator.redo() is False
 
-def test_undo_modifies_history(calculator, mocker):
+def test_undo_modifies_history(calculator):
     calculator.set_operation(Addition(cmd="add"))
 
-    mocker.patch(
-        "app.calculator.InputValidator.validate_number",
-        side_effect=[1, 2]
-    )
+    with patch("app.calculator.InputValidator.validate_number", side_effect=[1, 2]):
+        calculator.perform_operation(1, 2)
+        assert len(calculator.history) == 1
+        assert calculator.undo() is True
+        assert calculator.history == []
 
-    calculator.perform_operation(1, 2)
-
-    assert len(calculator.history) == 1
-
-    assert calculator.undo() is True
-    assert calculator.history == []
-
-def test_redo_restores_history(calculator, mocker):
+def test_redo_restores_history(calculator):
     calculator.set_operation(Addition(cmd="add"))
 
-    mocker.patch(
-        "app.calculator.InputValidator.validate_number",
-        side_effect=[1, 2]
-    )
+    with patch("app.calculator.InputValidator.validate_number", side_effect=[1, 2]):
+        calculator.perform_operation(1, 2)
+        calculator.undo()
+        assert calculator.history == []
+        assert calculator.redo() is True
+        assert len(calculator.history) == 1
 
-    calculator.perform_operation(1, 2)
-    calculator.undo()
-
-    assert calculator.history == []
-
-    assert calculator.redo() is True
-    assert len(calculator.history) == 1
-
-def test_repl_exit(capsys):
+def test_repl_exit(calculator, capsys):
     inputs = iter(["exit"])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
 
     captured = capsys.readouterr()
     assert "GoodBye! Exiting" in captured.out
 
-def test_repl_save_successful(capsys):
+def test_repl_save_successful(calculator, capsys):
     inputs = iter([
         "add",
         "2",
@@ -239,14 +229,15 @@ def test_repl_save_successful(capsys):
     ])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
     
     captured = capsys.readouterr()
     assert "History saved successfully" in captured.out
 
-def test_repl_load_successful(capsys):
+def test_repl_load_successful(calculator, capsys):
     inputs = iter([
         "add",
         "2",
@@ -257,7 +248,8 @@ def test_repl_load_successful(capsys):
     ])
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
-         patch("sys.exit", side_effect=SystemExit):
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
     
@@ -268,77 +260,63 @@ def test_perform_operation_without_setting_operation(calculator):
     with pytest.raises(OperationError, match="No operation set"):
         calculator.perform_operation(1, 2)
 
-def test_perform_operation_validation_error_passthrough(calculator, mocker):
+def test_perform_operation_validation_error_passthrough(calculator):
     calculator.set_operation(Addition(cmd="add"))
 
-    mocker.patch(
-        "app.calculator.InputValidator.validate_number",
-        side_effect=ValidationError("Invalid input")
-    )
+    with patch("app.calculator.InputValidator.validate_number", side_effect=ValidationError("Invalid input")):
+        with pytest.raises(ValidationError):
+            calculator.perform_operation("bad", 2)
 
-    with pytest.raises(ValidationError):
-        calculator.perform_operation("bad", 2)
-
-def test_perform_operation_wraps_generic_exception(calculator, mocker):
+def test_perform_operation_wraps_generic_exception(calculator):
     calculator.set_operation(Addition(cmd="add"))
 
-    mocker.patch(
-        "app.calculator.InputValidator.validate_number",
-        side_effect=[1, 2]
-    )
+    with patch("app.calculator.InputValidator.validate_number", side_effect=[1, 2]), \
+        patch.object(Addition, "execute", side_effect=Exception("boom")):
+        with pytest.raises(OperationError, match="Operation failed: boom"):
+            calculator.perform_operation(1, 2)
 
-    mocker.patch.object(
-        Addition,
-        "execute",
-        side_effect=Exception("boom")
-    )
+def test_save_history_exception(calculator):
+    with patch("pandas.DataFrame.to_csv", side_effect=Exception("fail")):
+        with pytest.raises(OperationError):
+            calculator.save_history()
 
-    with pytest.raises(OperationError, match="Operation failed: boom"):
-        calculator.perform_operation(1, 2)
-
-def test_save_history_exception(calculator, mocker):
-    mocker.patch("pandas.DataFrame.to_csv", side_effect=Exception("fail"))
-
-    with pytest.raises(OperationError):
-        calculator.save_history()
-
-def test_load_history_exception(calculator, mocker):
+def test_load_history_exception(calculator):
     calculator.save_history()
-    
-    mocker.patch("pandas.read_csv", side_effect=Exception("fail"))
 
-    with pytest.raises(OperationError):
-        calculator.load_history()
+    with patch("pandas.read_csv", side_effect=Exception("fail")):
+        with pytest.raises(OperationError):
+            calculator.load_history()
 
-def test_exit_command(mocker):
-    mocker.patch("builtins.input", side_effect=["exit"])
-    mocker.patch("sys.exit", side_effect=SystemExit)
+def test_exit_command(calculator):
+    with patch("builtins.input", side_effect=["exit"]), \
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
 
-    with pytest.raises(SystemExit):
+        with pytest.raises(SystemExit):
+            calculator_repl()
+
+def test_keyboard_interrupt(calculator):
+    with patch("builtins.input", side_effect=[KeyboardInterrupt, "exit"]), \
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
+        with pytest.raises(SystemExit):
+            calculator_repl()
+
+def test_eof_error(calculator):
+    with patch("builtins.input", side_effect=EOFError), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
         calculator_repl()
 
-def test_keyboard_interrupt(mocker):
-    mocker.patch(
-        "builtins.input",
-        side_effect=[KeyboardInterrupt, "exit"]
-    )
-    mocker.patch("sys.exit", side_effect=SystemExit)
-
-    with pytest.raises(SystemExit):
-        calculator_repl()
-
-def test_eof_error(mocker):
-    mocker.patch("builtins.input", side_effect=EOFError)
-    calculator_repl()
-
-def test_invalid_operand(mocker):
-    mocker.patch("builtins.input", side_effect=[
+def test_invalid_operand(calculator):
+    inputs = iter([
         "add",     # operation
         "abc",     # invalid operand
         "exit"     # exit after error
     ])
-    mocker.patch("sys.exit", side_effect=SystemExit)
 
-    with pytest.raises(SystemExit):
-        calculator_repl()
+    with patch("builtins.input", side_effect=inputs), \
+        patch("sys.exit", side_effect=SystemExit), \
+        patch("app.calculator_repl.Calculator", return_value=calculator):
+        with pytest.raises(SystemExit):
+            calculator_repl()
         
