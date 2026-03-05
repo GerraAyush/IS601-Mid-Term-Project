@@ -68,9 +68,8 @@ def test_percentage_index_zero():
     with pytest.raises(ValidationError, match="Base cannot be zero"):
         op.execute(9, 0)
 
-def test_operation_str():
-    op = Addition(cmd="add")
-    assert str(op) == "Addition"
+def test_operation_str(addition_op):
+    assert str(addition_op) == "Addition"
 
 
 def test_is_registered_true():
@@ -81,23 +80,23 @@ def test_is_registered_false():
     assert OperationFactory.is_registered("unknown") is False
 
 def test_create_operation_success():
-    op = OperationFactory.create_operation("add")
+    op = OperationFactory.create("add")
     assert isinstance(op, Addition)
     assert op.cmd == "add"
 
 def test_create_operation_unregistered():
-    with pytest.raises(ValueError, match="Unregistered Operation"):
-        OperationFactory.create_operation("unknown_op")
+    with pytest.raises(ValueError, match="Unregistered item"):
+        OperationFactory.create("unknown_op")
 
 def test_register_operation_success():
-    OperationFactory.register_operation(
+    OperationFactory.register(
         "mod",
         CustomOp,
         "modulo operation"
     )
 
     assert OperationFactory.is_registered("mod") is True
-    op = OperationFactory.create_operation("mod")
+    op = OperationFactory.create("mod")
     assert isinstance(op, CustomOp)
     assert op.execute(5, 2) == 1
 
@@ -106,17 +105,16 @@ def test_register_operation_invalid_type():
         pass
 
     with pytest.raises(TypeError, match="inherit from Operation"):
-        OperationFactory.register_operation(
+        OperationFactory.register(
             "bad",
             NotOperation,
             "bad operation"
         )
 
 def test_list_operations_returns_string():
-    output = OperationFactory.list_operations()
+    output = OperationFactory.list_items()
     assert isinstance(output, str)
 
-def test_validate_operands_default_returns_none():
-    op = Addition(cmd="add")
-    assert op.validate_operands(1, 2) is None
+def test_validate_operands_default_returns_none(addition_op):
+    assert addition_op.validate_operands(1, 2) is None
     

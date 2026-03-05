@@ -1,11 +1,12 @@
 # Datatypes
+from typing import Any
 from dataclasses import dataclass
 from abc import ABCMeta, abstractmethod
 
 # App Imports
 from app.datatypes import Number
 from app.exceptions import ValidationError
-
+from app.factory import FactoryBase
 
 @dataclass(frozen=True)
 class Operation(metaclass=ABCMeta):
@@ -96,9 +97,9 @@ class AbsoluteDifference(Operation):
     def execute(self, a: Number, b: Number) -> Number:
         self.validate_operands(a, b)
         return abs(a - b)
-
-class OperationFactory:
-    _operation_dict = {
+    
+class OperationFactory(FactoryBase):
+    _item_dict = {
         'add' : {
             '_cls' : Addition,
             'desc' : 'perform addition of two numbers',
@@ -140,39 +141,11 @@ class OperationFactory:
             'desc' : 'perform absolute difference of a and b',
         }
     }
+    _base_class = Operation
 
     @classmethod
-    def is_registered(cls, operation_name: str) -> bool:
-        return operation_name.lower() in cls._operation_dict
-
-    @classmethod
-    def register_operation(
-        cls,
-        operation_name: str, 
-        operation_class: Operation, 
-        operation_description: str
-    ) -> None:
-        if not issubclass(operation_class, Operation):
-            raise TypeError("Operation class must inherit from Operation")
-        cls._operation_dict.update(
-            {
-                operation_name.lower() : { 
-                    "_cls" : operation_class, 
-                    "desc" : operation_description
-                } 
-            }
-        )
-
-    @classmethod
-    def create_operation(cls, operation_name: str) -> Operation:
-        operation_info = cls._operation_dict.get(operation_name.lower())
-        if not operation_info:
-            raise ValueError(f"Unregistered Operation: {operation_name}")
-        return operation_info.get("_cls")(cmd=operation_name)
-    
-    @classmethod
-    def list_operations(cls):
-        display_string = ""
-        for cmd, operation_info in cls._operation_dict.items():
-            display_string += f"  {cmd} - {operation_info['desc']}\n"
-        return display_string.rstrip()
+    def create(cls, name: str, **kwargs) -> Any:
+        info = cls._item_dict.get(name.lower())
+        if not info:
+            raise ValueError(f"Unregistered item: {name}")
+        return info["_cls"](cmd=name, **kwargs)
