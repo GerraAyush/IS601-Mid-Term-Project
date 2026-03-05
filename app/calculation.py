@@ -21,7 +21,7 @@ class Calculation:
     _timestamp: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self) -> None:
-        operation = OperationFactory.create_operation(self._operation_name)
+        operation = OperationFactory.create(self._operation_name)
 
         object.__setattr__(
             self, 

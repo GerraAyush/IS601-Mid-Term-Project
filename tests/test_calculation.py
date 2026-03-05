@@ -1,33 +1,12 @@
 # Python Modules
 import pytest
+import logging
 from datetime import datetime
-from unittest.mock import patch
 
 # App Imports
 from app.calculation import Calculation
 from app.exceptions import OperationError
 
-
-class FakeOperation:
-    def __init__(self, name="add"):
-        self.name = name
-
-    def execute(self, a, b):
-        return a + b
-
-    def __str__(self):
-        return self.name
-    
-
-@pytest.fixture
-def fake_operation():
-    return FakeOperation("Addition")
-
-@pytest.fixture
-def mock_factory(fake_operation):
-    with patch("app.calculation.OperationFactory.create_operation") as mock:
-        mock.return_value = fake_operation
-        yield mock
 
 def test_post_init_sets_operation_and_result(mock_factory):
     calculation = Calculation("add", 2, 3)
@@ -110,3 +89,16 @@ def test_invalid_from_dict():
     }
     with pytest.raises(OperationError, match="Operation failed"):
         Calculation.from_dict(data)
+
+def test_result_mismatch_from_dict(caplog):
+    with caplog.at_level(logging.WARNING):
+        data = {
+            "operation_name": "add",
+            "operand1": 2,
+            "operand2": 3,
+            "result": 10,
+            "operation_class": "Addition",
+            "timestamp": datetime.now().isoformat()
+        }
+        calculation = Calculation.from_dict(data)
+        assert "Loaded calculation result 10 differs from computed result 5" in caplog.text

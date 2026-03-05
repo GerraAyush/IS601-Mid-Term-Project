@@ -1,50 +1,13 @@
 # Python Modules
 import pytest
 from pathlib import Path
-from unittest.mock import patch, PropertyMock
-from tempfile import TemporaryDirectory
+from unittest.mock import patch, MagicMock
 
 # App Imports
 from app.operation import Addition
-from app.calculator import Calculator
-from app.calculator_config import CalculatorConfig
 from app.exceptions import OperationError, ValidationError
-from app.calculator_repl import calculator_repl, print_operations
+from app.calculator_repl import calculator_repl
 
-
-@pytest.fixture
-def calculator():
-    with TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        config = CalculatorConfig(base_dir=temp_path)
-
-        with patch.object(CalculatorConfig, 'log_dir', new_callable=PropertyMock) as mock_log_dir, \
-             patch.object(CalculatorConfig, 'log_file', new_callable=PropertyMock) as mock_log_file, \
-             patch.object(CalculatorConfig, 'history_dir', new_callable=PropertyMock) as mock_history_dir, \
-             patch.object(CalculatorConfig, 'history_file', new_callable=PropertyMock) as mock_history_file:
-            
-            mock_log_dir.return_value = temp_path / "logs"
-            mock_log_file.return_value = temp_path / "logs/calculator.log"
-            mock_history_dir.return_value = temp_path / "history"
-            mock_history_file.return_value = temp_path / "history/calculator_history.csv"
-            
-            yield Calculator(config=config)
-
-def test_print_operations(capsys):
-    print_operations()
-    captured = capsys.readouterr()
-    assert "Available commands:" in captured.out
-    assert "add - perform addition of two numbers" in captured.out
-    assert "subtract - perform subtraction of two numbers" in captured.out
-    assert "multiply - perform multiplication of two numbers" in captured.out
-    assert "divide - perform division of a by b" in captured.out
-    assert "power - perform a to the power of b" in captured.out
-    assert "root - perform bth root of a" in captured.out
-    assert "modulus - check divisibility of a wrt b" in captured.out
-    assert "int_divide - perform integer division of a by b" in captured.out
-    assert "percent - check how much percent of b is a" in captured.out
-    assert "abs_diff - perform absolute difference of a and b" in captured.out
-    assert "exit - Exit the calculator" in captured.out
 
 def test_repl_help_then_exit(calculator):
     inputs = iter(["help", "exit"])
@@ -320,3 +283,41 @@ def test_invalid_operand(calculator):
         with pytest.raises(SystemExit):
             calculator_repl()
         
+@patch("app.calculator_repl.CalculatorRepl")
+@patch("app.calculator_repl.CommandInvoker")
+@patch("app.calculator_repl.ReplCommandFactory")
+@patch("app.calculator_repl.AutoSaveObserver")
+@patch("app.calculator_repl.LoggingObserver")
+@patch("app.calculator_repl.Calculator")
+@patch("app.calculator_repl.CalculatorConfig")
+@patch("app.calculator_repl.get_project_root")
+def test_calculator_repl_auto_save_branch(
+    mock_get_root,
+    mock_config_cls,
+    mock_calc_cls,
+    mock_logging_observer,
+    mock_autosave_observer,
+    mock_factory,
+    mock_invoker_cls,
+    mock_repl_cls,
+):
+    mock_get_root.return_value = Path(".")
+
+    mock_config = MagicMock()
+    mock_config.auto_save = True
+    mock_config_cls.return_value = mock_config
+
+    mock_calculator = MagicMock()
+    mock_calculator.config = mock_config
+    mock_calc_cls.return_value = mock_calculator
+
+    mock_invoker = MagicMock()
+    mock_invoker_cls.return_value = mock_invoker
+
+    mock_factory.create.return_value = MagicMock()
+
+    from app.calculator_repl import calculator_repl
+    calculator_repl()
+
+    mock_factory.create.assert_any_call("save", calculator=mock_calculator)
+    mock_invoker.set_on_finish.assert_called()
