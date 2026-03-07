@@ -7,6 +7,7 @@ from abc import ABCMeta, abstractmethod
 from app.datatypes import Number
 from app.exceptions import ValidationError
 from app.factory import FactoryBase
+from app.registry import operation
 
 
 @dataclass(frozen=True)
@@ -55,107 +56,6 @@ class Operation(metaclass=ABCMeta):
         return self.__class__.__name__
 
 
-class Addition(Operation):
-    """Performs a + b."""
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return a + b
-
-
-class Subtraction(Operation):
-    """Performs a - b."""
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return a - b
-
-
-class Multiplication(Operation):
-    """Performs a * b."""
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return a * b
-
-
-class Division(Operation):
-    """Performs a / b with division-by-zero validation."""
-    
-    def validate_operands(self, a: Number, b: Number) -> None:
-        super().validate_operands(a, b)
-        if b == 0:
-            raise ValidationError("Divisor cannot be zero.")
-    
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return a / b
-
-
-class Power(Operation):
-    """Performs a ** b."""
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return a ** b
-
-
-class Root(Operation):
-    """Performs the b-th root of a (a ** (1/b))."""
-    
-    def validate_operands(self, a: Number, b: Number) -> None:
-        super().validate_operands(a, b)
-        if b == 0:
-            raise ValidationError("Index cannot be zero.")
-    
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return a ** (1 / b)
-
-
-class Modulus(Operation):
-    """Performs a % b with zero-check for divisor."""
-    
-    def validate_operands(self, a: Number, b: Number) -> None:
-        super().validate_operands(a, b)
-        if b == 0:
-            raise ValidationError("Divisor cannot be zero.")
-    
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return a % b
-
-
-class IntegerDivision(Operation):
-    """Performs integer division a // b with zero-check."""
-    
-    def validate_operands(self, a: Number, b: Number) -> None:
-        super().validate_operands(a, b)
-        if b == 0:
-            raise ValidationError("Divisor cannot be zero.")
-    
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return a // b
-
-
-class Percentage(Operation):
-    """Calculates what percent a is of b."""
-    
-    def validate_operands(self, a: Number, b: Number) -> None:
-        super().validate_operands(a, b)
-        if b == 0:
-            raise ValidationError("Base cannot be zero.")
-    
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return (a / b) * 100
-
-
-class AbsoluteDifference(Operation):
-    """Calculates the absolute difference |a - b|."""
-    
-    def execute(self, a: Number, b: Number) -> Number:
-        self.validate_operands(a, b)
-        return abs(a - b)
-
-
 class OperationFactory(FactoryBase):
     """
     Factory for creating operation instances from a command string.
@@ -166,18 +66,7 @@ class OperationFactory(FactoryBase):
     """
 
     # Map of command names to operation classes and descriptions
-    _item_dict = {
-        'add': {'_cls': Addition, 'desc': 'perform addition of two numbers'},
-        'subtract': {'_cls': Subtraction, 'desc': 'perform subtraction of two numbers'},
-        'multiply': {'_cls': Multiplication, 'desc': 'perform multiplication of two numbers'},
-        'divide': {'_cls': Division, 'desc': 'perform division of a by b'},
-        'power': {'_cls': Power, 'desc': 'perform a to the power of b'},
-        'root': {'_cls': Root, 'desc': 'perform bth root of a'},
-        'modulus': {'_cls': Modulus, 'desc': 'check divisibility of a wrt b'},
-        'int_divide': {'_cls': IntegerDivision, 'desc': 'perform integer division of a by b'},
-        'percent': {'_cls': Percentage, 'desc': 'check how much percent of b is a'},
-        'abs_diff': {'_cls': AbsoluteDifference, 'desc': 'perform absolute difference of a and b'},
-    }
+    _item_dict = {}
     _base_class = Operation
 
     @classmethod
@@ -199,3 +88,114 @@ class OperationFactory(FactoryBase):
         if not info:
             raise ValueError(f"Unregistered item: {name}")
         return info["_cls"](cmd=name, **kwargs)
+
+
+@operation(name="add", description="perform addition of two numbers")
+class Addition(Operation):
+    """Performs a + b."""
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return a + b
+
+
+@operation(name="subtract", description="perform subtraction of two numbers")
+class Subtraction(Operation):
+    """Performs a - b."""
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return a - b
+
+
+@operation(name="multiply", description="perform multiplication of two numbers")
+class Multiplication(Operation):
+    """Performs a * b."""
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return a * b
+
+
+@operation(name="divide", description="perform division of a by b")
+class Division(Operation):
+    """Performs a / b with division-by-zero validation."""
+    
+    def validate_operands(self, a: Number, b: Number) -> None:
+        super().validate_operands(a, b)
+        if b == 0:
+            raise ValidationError("Divisor cannot be zero.")
+    
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return a / b
+
+
+@operation(name="power", description="perform a to the power of b")
+class Power(Operation):
+    """Performs a ** b."""
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return a ** b
+
+
+@operation(name="root", description="perform bth root of a")
+class Root(Operation):
+    """Performs the b-th root of a (a ** (1/b))."""
+    
+    def validate_operands(self, a: Number, b: Number) -> None:
+        super().validate_operands(a, b)
+        if b == 0:
+            raise ValidationError("Index cannot be zero.")
+    
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return a ** (1 / b)
+
+
+@operation(name="modulus", description="check divisibility of a wrt b")
+class Modulus(Operation):
+    """Performs a % b with zero-check for divisor."""
+    
+    def validate_operands(self, a: Number, b: Number) -> None:
+        super().validate_operands(a, b)
+        if b == 0:
+            raise ValidationError("Divisor cannot be zero.")
+    
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return a % b
+
+
+@operation(name="int_divide", description="perform integer division of a by b")
+class IntegerDivision(Operation):
+    """Performs integer division a // b with zero-check."""
+    
+    def validate_operands(self, a: Number, b: Number) -> None:
+        super().validate_operands(a, b)
+        if b == 0:
+            raise ValidationError("Divisor cannot be zero.")
+    
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return a // b
+
+
+@operation(name="percent", description="check how much percent of b is a")
+class Percentage(Operation):
+    """Calculates what percent a is of b."""
+    
+    def validate_operands(self, a: Number, b: Number) -> None:
+        super().validate_operands(a, b)
+        if b == 0:
+            raise ValidationError("Base cannot be zero.")
+    
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return (a / b) * 100
+
+
+@operation(name="abs_diff", description="perform absolute difference of a and b")
+class AbsoluteDifference(Operation):
+    """Calculates the absolute difference |a - b|."""
+    
+    def execute(self, a: Number, b: Number) -> Number:
+        self.validate_operands(a, b)
+        return abs(a - b)

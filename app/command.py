@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 from app.datatypes import Number
 from app.factory import FactoryBase
 from app.operation import OperationFactory
+from app.registry import command
+
 
 class Command(ABC):
     """
@@ -27,6 +29,7 @@ class Command(ABC):
             The result of the command if applicable, else None.
         """
         pass    # pragma: no cover
+
 
 class CalculationCommand(Command):
     """
@@ -62,7 +65,19 @@ class CalculationCommand(Command):
         operation = OperationFactory.create(self.operation_name)
         self.calculator.set_operation(operation)
         return self.calculator.perform_operation(self.a, self.b)
-    
+
+
+class ReplCommandFactory(FactoryBase):
+    """
+    Factory to create REPL commands dynamically.
+
+    Registers commands like help, history, undo, redo, save, load, and exit.
+    """
+    _item_dict = {}
+    _base_class = Command
+
+
+@command(name="help", description="Show all available operations")
 class HelpCommand(Command):
     """Command to display the available commands."""
     def execute(self) -> None:
@@ -72,6 +87,8 @@ class HelpCommand(Command):
              + ReplCommandFactory.list_items()
         )
 
+
+@command(name="history", description="Show calculation history")
 class HistoryCommand(Command):
     """Command to display the calculation history."""
 
@@ -82,6 +99,7 @@ class HistoryCommand(Command):
         self.calculator.show_history()
 
 
+@command(name="clear", description="Clear calculation history")
 class ClearCommand(Command):
     """Command to clear the calculation history."""
 
@@ -93,6 +111,7 @@ class ClearCommand(Command):
         print("Cleared history.")
 
 
+@command(name="undo", description="Undo the last calculation")
 class UndoCommand(Command):
     """Command to undo the last calculation."""
 
@@ -106,6 +125,7 @@ class UndoCommand(Command):
             print("Nothing to undo")
 
 
+@command(name="redo", description="Redo the last undone calculation")
 class RedoCommand(Command):
     """Command to redo the last undone calculation."""
 
@@ -119,6 +139,7 @@ class RedoCommand(Command):
             print("Nothing to redo")
 
 
+@command(name="save", description="Save calculation history to file")
 class SaveCommand(Command):
     """Command to save calculation history to a file."""
 
@@ -133,6 +154,7 @@ class SaveCommand(Command):
             print(f"Error saving history: {e}")
 
 
+@command(name="load", description="Load calculation history from file")
 class LoadCommand(Command):
     """Command to load calculation history from a file."""
 
@@ -147,6 +169,7 @@ class LoadCommand(Command):
             print(f"Error loading history: {e}")
 
 
+@command(name="exit", description="Exit the calculator")
 class ExitCommand(Command):
     """
     Command to exit the calculator REPL.
@@ -172,45 +195,3 @@ class ExitCommand(Command):
 
         print("\nGoodBye! Exiting ...\n")
         sys.exit()
-
-class ReplCommandFactory(FactoryBase):
-    """
-    Factory to create REPL commands dynamically.
-
-    Registers commands like help, history, undo, redo, save, load, and exit.
-    """
-    _item_dict = {
-        'help' : {
-            '_cls' : HelpCommand,
-            'desc' : 'Show all available operations'
-        },
-        'history' : {
-            '_cls' : HistoryCommand,
-            'desc' : 'Show calculation history',
-        },
-        'clear' : {
-            '_cls' : ClearCommand,
-            'desc' : 'Clear calculation history',
-        },
-        'undo' : {
-            '_cls' : UndoCommand,
-            'desc' : 'Undo the last calculation',
-        },
-        'redo' : {
-            '_cls' : RedoCommand,
-            'desc' : 'Redo the last undone calculation',
-        },
-        'save' : {
-            '_cls' : SaveCommand,
-            'desc' : 'Save calculation history to file',
-        },
-        'load' : {
-            '_cls' : LoadCommand,
-            'desc' : 'Load calculation history from file',
-        },
-        'exit' : {
-            '_cls' : ExitCommand,
-            'desc' : 'Exit the calculator',
-        }
-    }
-    _base_class = Command
