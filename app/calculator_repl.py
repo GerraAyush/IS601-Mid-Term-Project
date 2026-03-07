@@ -2,18 +2,19 @@
 import logging
 
 # Datatypes
-from typing import List
+from typing import List, Optional
 
 # App Imports
+from app.datatypes import Number
 from app.calculator import Calculator
 from app.operation import OperationFactory
-from app.calculator_config import CalculatorConfig
+from app.config import CalculatorConfig, ReplConfig
 from app.command import Command, CalculationCommand, ReplCommandFactory
 from app.history import LoggingObserver, AutoSaveObserver
-from app.exceptions import ValidationError, OperationError
-from app.utils import get_project_root
+from app.exceptions import ValidationError, OperationError, ExitSignal
 from app.command_invoker import CommandInvoker
-from app.datatypes import Number
+from app.utils import get_project_root
+from app.console import Console
 
 
 class CalculatorRepl:
@@ -26,7 +27,12 @@ class CalculatorRepl:
     pattern to dynamically create and execute commands.
     """
 
-    def __init__(self, calculator: Calculator, invoker: CommandInvoker):
+    def __init__(
+            self, 
+            calculator: Calculator, 
+            invoker: CommandInvoker, 
+            config: Optional[ReplConfig] = None
+        ):
         """
         Initialize the REPL with a calculator instance and a command invoker.
 
@@ -37,8 +43,24 @@ class CalculatorRepl:
         invoker : CommandInvoker
             The command invoker responsible for executing commands.
         """
+        if config is None:
+            config = ReplConfig()
+        
+        self.config = config
+        self.config.validate()
+
         self.calculator = calculator
         self.invoker = invoker
+        
+        self._setup_colorama()
+
+    def _setup_colorama(self) -> None:
+        """
+        Initialize color support for the terminal.
+        """
+        self.console = Console()
+        if not self.console.initiated:
+            self.console.setup(self.config.color_text)
 
     def start(self) -> None:
         """
@@ -51,12 +73,18 @@ class CalculatorRepl:
         print("Welcome! I will help with Math. Dumbo.")
 
         # Execute any startup command (e.g., display help menu)
-        self.invoker.run_start()
+        result = self.invoker.run_start()
+
+        # Print the result
+        if result is not None:
+            self.console.info(result)
 
         while True:
             try:
                 # Read user command and remove surrounding whitespace
                 user_command : str = input("\nEnter the operation you want to perform: ").strip()
+
+                result: Optional[str | Number] = None
 
                 # Check if the command is a registered REPL command
                 if ReplCommandFactory.is_registered(user_command):
@@ -69,15 +97,24 @@ class CalculatorRepl:
                         command: Command = ReplCommandFactory.create(user_command, calculator=self.calculator)
 
                     # Execute the command using the invoker
-                    self.invoker.execute(command)
-                    continue
+                    try:
+                        result = self.invoker.execute(command)
+                    
+                    except ExitSignal:
+                        result = self.invoker.run_finish()
+                        if result is not None:
+                            self.console.success(result)
+                        self.console.info("\nGoodBye! Exiting ...\n")
+                        break
 
+                    self.console.success(result)
+                    
                 # Check if the command corresponds to a mathematical operation
-                if OperationFactory.is_registered(user_command):
+                elif OperationFactory.is_registered(user_command):
 
                     # Collect two operands from the user
                     operands: List[Number] = self._get_operands()
-
+                    
                     # Create a calculation command to perform the operation
                     command: Command = CalculationCommand(
                         calculator=self.calculator,
@@ -87,29 +124,30 @@ class CalculatorRepl:
                     )
 
                     # Execute the calculation command
-                    self.invoker.execute(command)
-                    continue
+                    result = self.invoker.execute(command)
 
-                # If command is not recognized
-                print(f"Unknown command: '{user_command}'. Type 'help' for available commands.")
+                    # Print the result
+                    self.console.success(f"Result: {result}")
+
+                else:
+                    # If command is not recognized
+                    self.console.warning(f"Unknown command: '{user_command}'. Type 'help' for available commands.")
 
             # Handle validation and operation errors
             except (ValidationError, OperationError) as e:
-                print(f"Error: {e}")
+                self.console.error(f"Error: {e}")
 
             # Handle user interruption (Ctrl+C)
             except KeyboardInterrupt:
-                print("\nOperation cancelled")
+                self.console.error("\nOperation cancelled")
                 logging.info("Operation cancelled")
 
             # Handle input termination (Ctrl+D / EOF)
             except EOFError:
-                print("\nInput terminated. Exiting...")
+                self.console.error("\nInput terminated. Exiting...")
                 logging.info("Input terminated. Exiting...")
                 break
 
-        # Execute any cleanup or finishing command (e.g., auto-save)
-        self.invoker.run_finish()
 
     def _get_operands(self) -> None:
         """
@@ -160,7 +198,6 @@ def calculator_repl() -> None:
 
     # Create command invoker responsible for executing commands
     invoker = CommandInvoker()
-    
     
     # Run the help command when the application starts
     invoker.set_on_start(ReplCommandFactory.create("help"))

@@ -7,7 +7,7 @@ from pathlib import Path
 from decimal import Decimal
 
 # App imports
-from app.calculator_config import CalculatorConfig
+from app.config import CalculatorConfig
 from app.exceptions import ConfigurationError
 
 

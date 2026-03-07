@@ -6,7 +6,8 @@ from unittest.mock import patch, MagicMock
 # App Imports
 from app.operation import Addition
 from app.exceptions import OperationError, ValidationError
-from app.calculator_repl import calculator_repl
+from app.calculator_repl import CalculatorRepl, calculator_repl
+from app.config import ReplConfig
 
 
 def test_repl_help_then_exit(calculator):
@@ -15,8 +16,7 @@ def test_repl_help_then_exit(calculator):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
 
 def test_repl_history_then_exit(calculator):
     inputs = iter(["history", "exit"])
@@ -24,8 +24,7 @@ def test_repl_history_then_exit(calculator):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
 
 def test_repl_clear_then_exit(calculator, capsys):
     inputs = iter(["clear", "exit"])
@@ -33,8 +32,7 @@ def test_repl_clear_then_exit(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
 
     captured = capsys.readouterr()
     assert "Cleared history." in captured.out
@@ -56,8 +54,7 @@ def test_repl_invalid_operation(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
 
     captured = capsys.readouterr()
     assert "Unknown command: 'invalid_cmd'. Type 'help' for available commands." in captured.out
@@ -72,8 +69,7 @@ def test_repl_valid_operation_add(capsys):
 
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
 
     captured = capsys.readouterr()
     assert "Result: 5" in captured.out
@@ -90,8 +86,7 @@ def test_repl_undo_successful(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
     
     captured = capsys.readouterr()
     assert "Undo successful!" in captured.out
@@ -105,8 +100,7 @@ def test_repl_no_undo(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
     
     captured = capsys.readouterr()
     assert "Nothing to undo" in captured.out
@@ -124,8 +118,7 @@ def test_repl_redo_successful(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
     
     captured = capsys.readouterr()
     assert "Redo successful!" in captured.out
@@ -139,8 +132,7 @@ def test_repl_no_redo(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
     
     captured = capsys.readouterr()
     assert "Nothing to redo" in captured.out
@@ -176,8 +168,7 @@ def test_repl_exit(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
 
     captured = capsys.readouterr()
     assert "GoodBye! Exiting" in captured.out
@@ -194,8 +185,7 @@ def test_repl_save_successful(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
     
     captured = capsys.readouterr()
     assert "History saved successfully" in captured.out
@@ -213,8 +203,7 @@ def test_repl_load_successful(calculator, capsys):
     with patch("builtins.input", side_effect=lambda _: next(inputs)), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
     
     captured = capsys.readouterr()
     assert "History loaded successfully" in captured.out
@@ -255,15 +244,13 @@ def test_exit_command(calculator):
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
 
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
 
 def test_keyboard_interrupt(calculator):
     with patch("builtins.input", side_effect=[KeyboardInterrupt, "exit"]), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
 
 def test_eof_error(calculator):
     with patch("builtins.input", side_effect=EOFError), \
@@ -280,8 +267,7 @@ def test_invalid_operand(calculator):
     with patch("builtins.input", side_effect=inputs), \
         patch("sys.exit", side_effect=SystemExit), \
         patch("app.calculator_repl.Calculator", return_value=calculator):
-        with pytest.raises(SystemExit):
-            calculator_repl()
+        calculator_repl()
         
 @patch("app.calculator_repl.CalculatorRepl")
 @patch("app.calculator_repl.CommandInvoker")
@@ -321,3 +307,51 @@ def test_calculator_repl_auto_save_branch(
 
     mock_factory.create.assert_any_call("save", calculator=mock_calculator)
     mock_invoker.set_on_finish.assert_called()
+
+
+def test_start_command_output(monkeypatch, calculator, invoker):
+    repl = CalculatorRepl(calculator, invoker)
+
+    monkeypatch.setattr(invoker, "run_start", lambda: "HELLO")
+
+    inputs = iter(["exit"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    repl.start()
+
+from app.exceptions import ExitSignal
+
+
+def test_exit_signal(monkeypatch, calculator, invoker):
+    repl = CalculatorRepl(calculator, invoker)
+
+    def fake_execute(command):
+        raise ExitSignal()
+
+    monkeypatch.setattr(invoker, "execute", fake_execute)
+    monkeypatch.setattr(invoker, "run_finish", lambda: "Saved")
+
+    inputs = iter(["exit"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    repl.start()
+
+
+def test_repl_config_set(calculator, invoker):
+    repl_config = ReplConfig()
+    repl = CalculatorRepl(calculator, invoker, repl_config)
+
+    assert repl.config is repl_config
+
+
+def test_setup_colorama_calls_setup():
+    calculator = MagicMock()
+    invoker = MagicMock()
+
+    mock_console = MagicMock()
+    mock_console.initiated = False
+
+    with patch("app.calculator_repl.Console", return_value=mock_console):
+        repl = CalculatorRepl(calculator, invoker)
+
+    mock_console.setup.assert_called_once_with(repl.config.color_text)

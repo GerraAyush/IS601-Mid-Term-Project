@@ -1,8 +1,8 @@
 # Python Modules
-import sys
+import logging
 
 # Datatypes
-from typing import Union, Optional
+from typing import Union
 from abc import ABC, abstractmethod
 
 # App imports
@@ -10,57 +10,70 @@ from app.datatypes import Number
 from app.factory import FactoryBase
 from app.operation import OperationFactory
 from app.registry import command
+from app.exceptions import ExitSignal
 
 
 class Command(ABC):
     """
     Abstract base class for all commands.
 
-    All commands should implement the `execute` method.
+    Concrete command classes must implement the `execute` method.
+    Commands encapsulate an action that can be executed by the
+    command invoker within the REPL.
     """
+
     @abstractmethod
-    def execute(self) -> Union[Number, None]:
+    def execute(self) -> Union[str, Number, None]:
         """
         Execute the command.
 
         Returns
         -------
-        Union[Number, None]
-            The result of the command if applicable, else None.
+        Union[str, Number, None]
+            Result produced by the command. Many commands return a
+            message string, calculation commands return a numeric
+            result, and some commands may return None.
         """
-        pass    # pragma: no cover
+        pass  # pragma: no cover
 
 
 class CalculationCommand(Command):
     """
-    Command to perform a calculation using the Calculator.
+    Command responsible for executing a mathematical operation.
+
+    This command delegates the actual computation to the Calculator
+    instance by creating the requested operation via the
+    OperationFactory and executing it with the provided operands.
 
     Parameters
     ----------
     calculator : Calculator
-        Calculator instance to perform operations on.
+        Calculator instance used to perform the operation.
     operation_name : str
-        Name of the operation to perform (e.g., 'add', 'subtract').
+        Name of the operation to execute (e.g., 'add', 'subtract').
     operand1 : Number
         First operand.
     operand2 : Number
         Second operand.
     """
+
     def __init__(self, calculator: "Calculator", operation_name: str, operand1: Number, operand2: Number):
         self.calculator = calculator
         self.operation_name = operation_name
         self.a = operand1
         self.b = operand2
-    
+
     def execute(self) -> Number:
         """
-        Perform the calculation by creating the operation
-        and executing it via the Calculator instance.
+        Execute the calculation command.
+
+        The operation is created using the OperationFactory and then
+        executed by the calculator instance.
 
         Returns
         -------
         Number
-            Result of the operation.
+            Result of the mathematical operation.
         """
         operation = OperationFactory.create(self.operation_name)
         self.calculator.set_operation(operation)
@@ -69,129 +82,192 @@ class CalculationCommand(Command):
 
 class ReplCommandFactory(FactoryBase):
     """
-    Factory to create REPL commands dynamically.
+    Factory responsible for creating REPL command instances.
 
-    Registers commands like help, history, undo, redo, save, load, and exit.
+    Command classes decorated with the `@command` decorator are
+    automatically registered in this factory. The factory allows
+    commands to be created dynamically based on their registered
+    name.
     """
+
     _item_dict = {}
     _base_class = Command
 
 
 @command(name="help", description="Show all available operations")
 class HelpCommand(Command):
-    """Command to display the available commands."""
-    def execute(self) -> None:
-        print(
-            "Available commands: \n" \
-             + OperationFactory.list_items()
-             + ReplCommandFactory.list_items()
+    """
+    Command that displays all available calculator operations
+    and REPL commands.
+    """
+
+    def execute(self) -> str:
+        return (
+            "Available commands:\n"
+            + OperationFactory.list_items()
+            + ReplCommandFactory.list_items()
         )
 
 
 @command(name="history", description="Show calculation history")
 class HistoryCommand(Command):
-    """Command to display the calculation history."""
+    """
+    Command that displays the calculator's stored history.
+    """
 
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
-    def execute(self) -> None:
-        self.calculator.show_history()
+    def execute(self) -> str:
+        """
+        Retrieve and return the calculation history.
+
+        Returns
+        -------
+        str
+            Formatted history output.
+        """
+        return self.calculator.show_history()
 
 
 @command(name="clear", description="Clear calculation history")
 class ClearCommand(Command):
-    """Command to clear the calculation history."""
+    """
+    Command that clears all stored calculation history.
+    """
 
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
-    def execute(self) -> None:
+    def execute(self) -> str:
+        """
+        Clear the calculator history.
+
+        Returns
+        -------
+        str
+            Confirmation message.
+        """
         self.calculator.clear_history()
-        print("Cleared history.")
+        return "Cleared history."
 
 
 @command(name="undo", description="Undo the last calculation")
 class UndoCommand(Command):
-    """Command to undo the last calculation."""
+    """
+    Command that undoes the most recent calculation.
+    """
 
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
-    def execute(self) -> None:
-        if self.calculator.undo():
-            print("Undo successful!")
-        else:
-            print("Nothing to undo")
+    def execute(self) -> str:
+        """
+        Undo the most recent calculation.
+
+        Returns
+        -------
+        str
+            Result message indicating whether the operation succeeded.
+        """
+        return "Undo successful!" if self.calculator.undo() else "Nothing to undo"
 
 
 @command(name="redo", description="Redo the last undone calculation")
 class RedoCommand(Command):
-    """Command to redo the last undone calculation."""
+    """
+    Command that re-applies the most recently undone calculation.
+    """
 
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
-    def execute(self) -> None:
-        if self.calculator.redo():
-            print("Redo successful!")
-        else:
-            print("Nothing to redo")
+    def execute(self) -> str:
+        """
+        Redo the last undone calculation.
+
+        Returns
+        -------
+        str
+            Result message indicating whether the operation succeeded.
+        """
+        return "Redo successful!" if self.calculator.redo() else "Nothing to redo"
 
 
 @command(name="save", description="Save calculation history to file")
 class SaveCommand(Command):
-    """Command to save calculation history to a file."""
+    """
+    Command that persists the calculator history to disk.
+    """
 
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
-    def execute(self) -> None:
+    def execute(self) -> str:
+        """
+        Save the current calculation history.
+
+        Returns
+        -------
+        str
+            Confirmation message if the save succeeds.
+
+        Raises
+        ------
+        Exception
+            Propagates any errors encountered during saving.
+        """
         try:
             self.calculator.save_history()
-            print("History saved successfully")
+            return "History saved successfully"
         except Exception as e:
-            print(f"Error saving history: {e}")
+            logging.error(f"Error: {str(e)}")
+            raise
 
 
 @command(name="load", description="Load calculation history from file")
 class LoadCommand(Command):
-    """Command to load calculation history from a file."""
+    """
+    Command that loads previously saved calculation history.
+    """
 
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
-    def execute(self) -> None:
+    def execute(self) -> str:
+        """
+        Load calculation history from storage.
+
+        Returns
+        -------
+        str
+            Confirmation message if loading succeeds.
+
+        Raises
+        ------
+        Exception
+            Propagates any errors encountered during loading.
+        """
         try:
             self.calculator.load_history()
-            print("History loaded successfully")
+            return "History loaded successfully"
         except Exception as e:
-            print(f"Error loading history: {e}")
+            logging.error(f"Error: {str(e)}")
+            raise
 
 
 @command(name="exit", description="Exit the calculator")
 class ExitCommand(Command):
     """
-    Command to exit the calculator REPL.
+    Command that signals the REPL to terminate.
 
-    Parameters
-    ----------
-    on_exit_command : Optional[Command], default=None
-        Command to execute before exiting (e.g., save command).
+    Instead of directly terminating the program, this command raises
+    an ExitSignal exception. The REPL is responsible for catching the
+    signal and performing any necessary cleanup before exiting.
     """
 
-    def execute(self, on_exit_command: Optional[Command] = None) -> None:
-
-        if on_exit_command:
-            if not issubclass(type(on_exit_command), Command):
-                raise TypeError(f"Item class must inherit from Command")
-            
-            if isinstance(on_exit_command, ExitCommand):
-                raise TypeError(f"Item cannot be ExitCommand")
-
-            result = on_exit_command.execute()
-            if result:
-                print(f"Result: {result}")
-
-        print("\nGoodBye! Exiting ...\n")
-        sys.exit()
+    def execute(self) -> None:
+        """
+        Raise an ExitSignal to terminate the REPL loop.
+        """
+        raise ExitSignal()

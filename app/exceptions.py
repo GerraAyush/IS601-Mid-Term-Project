@@ -1,37 +1,59 @@
 class CalculatorError(Exception):
     """
-    Base exception class for all calculator-related errors.
-    
-    This allows catching any calculator-specific exception using CalculatorError.
+    Base exception for all calculator-related errors.
+
+    All custom exceptions in the calculator application inherit from
+    this class, allowing callers to catch any calculator-specific
+    error using a single exception type.
     """
     pass
+
 
 class OperationError(CalculatorError):
     """
-    Raised when an error occurs during the execution of a calculation or operation.
-    
-    Examples:
-        - Unsupported operation
+    Raised when an error occurs during a calculation or operation.
+
+    Examples
+    --------
+    - Unsupported operation
+    - Division by zero
+    - Invalid operation arguments
     """
     pass
+
 
 class ValidationError(CalculatorError):
     """
-    Raised when input validation fails.
-    
-    Examples:
-        - Operand is not a number
-        - Operand exceeds allowed limits
+    Raised when user input fails validation checks.
+
+    Examples
+    --------
+    - Operand is not a valid number
+    - Operand exceeds allowed limits
+    - Incorrect number of arguments
     """
     pass
 
+
 class ConfigurationError(CalculatorError):
     """
-    Raised when there is a problem with calculator configuration.
-    
-    Examples:
-        - Invalid max history size
-        - Logging directory does not exist
-        - Invalid precision value
+    Raised when application configuration is invalid.
+
+    Examples
+    --------
+    - Invalid max history size
+    - Invalid precision value
+    - Missing or invalid configuration values
+    """
+    pass
+
+
+class ExitSignal(Exception):
+    """
+    Internal control-flow exception used to terminate the REPL.
+
+    This exception is raised by the ExitCommand to signal that the
+    application should exit. It is not treated as an error but as a
+    normal shutdown mechanism.
     """
     pass

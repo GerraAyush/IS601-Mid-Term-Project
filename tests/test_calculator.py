@@ -10,7 +10,7 @@ from app.operation import Addition
 from app.calculator import Calculator
 from app.calculation import Calculation
 from app.exceptions import OperationError, ConfigurationError
-from app.calculator_config import CalculatorConfig
+from app.config import CalculatorConfig
 from app.history import LoggingObserver
 
 
@@ -81,22 +81,20 @@ def test_clear_history(calculator, addition_op):
     calculator.clear_history()
     assert calculator.history == []
 
-def test_show_history_empty(calculator, capsys):
-    calculator.show_history()
-    captured = capsys.readouterr()
-    assert "No operations in history." in captured.out
+def test_show_history_empty(calculator):
+    output = calculator.show_history()
+    assert "No operations in history." in output
 
-def test_show_history_with_entries(calculator, addition_op, capsys):
+def test_show_history_with_entries(calculator, addition_op):
     calculator.set_operation(addition_op)
 
     with patch("app.calculator.InputValidator.validate_number", side_effect=[5, 6]):
         calculator.perform_operation(5, 6)
 
-    calculator.show_history()
-    captured = capsys.readouterr()
+    output = calculator.show_history()
 
-    assert "Following operations have been performed:" in captured.out
-    assert "1." in captured.out
+    assert "Following operations have been performed:" in output
+    assert "1." in output
 
 def test_perform_operation_without_strategy(calculator):
     with patch("app.calculator.InputValidator.validate_number", side_effect=[1, 2]):
