@@ -2,12 +2,14 @@
 import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch, PropertyMock
+from unittest.mock import patch, PropertyMock, MagicMock
 
 # App Imports
 from app.operation import Addition
 from app.calculator import Calculator
-from app.calculator_config import CalculatorConfig
+from app.command_invoker import CommandInvoker
+from app.calculator_repl import CalculatorRepl
+from app.config import CalculatorConfig
 
 
 class FakeOperation:
@@ -52,3 +54,16 @@ def mock_factory(fake_operation):
 @pytest.fixture
 def addition_op():
     return Addition(cmd="add")
+
+@pytest.fixture
+def invoker():
+    """Fixture for a CommandInvoker instance."""
+    return CommandInvoker()
+
+@pytest.fixture
+def repl(calculator, invoker):
+    """Fixture for a CalculatorRepl instance with mocked console."""
+    repl_instance = CalculatorRepl(calculator, invoker)
+    repl_instance.console = MagicMock()
+    return repl_instance
+    

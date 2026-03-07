@@ -10,10 +10,10 @@ from typing import List, Any, Optional
 from app.datatypes import Number
 from app.operation import Operation
 from app.utils import get_project_root
+from app.config import CalculatorConfig
 from app.history import HistoryObserver
 from app.calculation import Calculation
 from app.validators import InputValidator
-from app.calculator_config import CalculatorConfig
 from app.calculator_memento import CalculatorMemento
 from app.exceptions import ValidationError, OperationError, ConfigurationError
 
@@ -106,19 +106,28 @@ class Calculator:
         self.operation_strategy = operation_strategy
         logging.info(f"Set operation: {operation_strategy}")
 
-    def show_history(self):
+    def show_history(self) -> str:
         """
         Display all calculations performed so far.
-        If history is empty, notifies the user.
-        """
-        if len(self.history) > 0:
-            print("Following operations have been performed: ")
-            for idx, calc in enumerate(self.history):
-                print(f"{idx + 1}. {calc}")
-        else:
-            print("No operations in history.")
 
-    def clear_history(self):
+        Returns
+        -------
+        str
+            Formatted history output.
+        """
+        # Default string
+        display_string: str = "No operations in history."
+
+        # Construct history as string
+        if len(self.history) > 0:
+            display_string = "Following operations have been performed: \n"
+            for idx, calc in enumerate(self.history):
+                display_string += f"{idx + 1}. {calc}\n"
+
+        # Return the display string
+        return display_string
+
+    def clear_history(self) -> None:
         """
         Clear calculation history and reset undo/redo stacks.
         """
@@ -253,7 +262,7 @@ class Calculator:
             in self._observers
         ]
 
-    def save_history(self):
+    def save_history(self) -> None:
         """
         Persist calculation history to CSV.
 
@@ -285,7 +294,7 @@ class Calculator:
             logging.error(f"Failed to save history: {e}")
             raise OperationError(f"Failed to save history: {e}")
         
-    def load_history(self):
+    def load_history(self) -> None:
         """
         Load calculation history from CSV.
 

@@ -19,6 +19,14 @@ def test_run_start_when_none():
     invoker.run_start()  # should do nothing
 
 
+def test_exit_set_on_finish():
+    invoker = CommandInvoker()
+    mock_command = MagicMock(spec=ExitCommand)
+
+    with pytest.raises(TypeError, match="Finish command cannot be ExitCommand"):
+        invoker.set_on_finish(mock_command)
+
+
 def test_set_on_finish_and_run():
     invoker = CommandInvoker()
     mock_command = MagicMock(spec=Command)
@@ -39,41 +47,4 @@ def test_execute_invalid_type():
 
     with pytest.raises(TypeError):
         invoker.execute("not a command")
-
-
-def test_execute_command_with_result(capsys):
-    invoker = CommandInvoker()
-
-    mock_command = MagicMock(spec=Command)
-    mock_command.execute.return_value = 42
-
-    invoker.execute(mock_command)
-
-    captured = capsys.readouterr()
-    assert "Result: 42" in captured.out
-
-
-def test_execute_command_without_result(capsys):
-    invoker = CommandInvoker()
-
-    mock_command = MagicMock(spec=Command)
-    mock_command.execute.return_value = None
-
-    invoker.execute(mock_command)
-
-    captured = capsys.readouterr()
-    assert captured.out == ""
-
-
-def test_execute_exit_command():
-    invoker = CommandInvoker()
-
-    mock_exit = MagicMock(spec=ExitCommand)
-    mock_finish = MagicMock(spec=Command)
-
-    invoker.set_on_finish(mock_finish)
-
-    invoker.execute(mock_exit)
-
-    mock_exit.execute.assert_any_call(on_exit_command=mock_finish)
     

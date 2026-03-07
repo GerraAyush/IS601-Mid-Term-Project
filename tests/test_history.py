@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 from app.calculation import Calculation
 from app.history import LoggingObserver, AutoSaveObserver
 from app.calculator import Calculator
-from app.calculator_config import CalculatorConfig
+from app.config import CalculatorConfig
 
 
 calculation_mock = Mock(spec=Calculation)
