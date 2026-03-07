@@ -1,4 +1,5 @@
 asttokens==3.0.1
+colorama==0.4.6
 comm==0.2.3
 coverage==7.13.4
 debugpy==1.8.20
