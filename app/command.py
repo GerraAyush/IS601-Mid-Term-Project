@@ -11,12 +11,38 @@ from app.factory import FactoryBase
 from app.operation import OperationFactory
 
 class Command(ABC):
+    """
+    Abstract base class for all commands.
 
+    All commands should implement the `execute` method.
+    """
     @abstractmethod
     def execute(self) -> Union[Number, None]:
+        """
+        Execute the command.
+
+        Returns
+        -------
+        Union[Number, None]
+            The result of the command if applicable, else None.
+        """
         pass    # pragma: no cover
 
 class CalculationCommand(Command):
+    """
+    Command to perform a calculation using the Calculator.
+
+    Parameters
+    ----------
+    calculator : Calculator
+        Calculator instance to perform operations on.
+    operation_name : str
+        Name of the operation to perform (e.g., 'add', 'subtract').
+    operand1 : Number
+        First operand.
+    operand2 : Number
+        Second operand.
+    """
     def __init__(self, calculator: "Calculator", operation_name: str, operand1: Number, operand2: Number):
         self.calculator = calculator
         self.operation_name = operation_name
@@ -24,26 +50,32 @@ class CalculationCommand(Command):
         self.b = operand2
     
     def execute(self) -> Number:
+        """
+        Perform the calculation by creating the operation
+        and executing it via the Calculator instance.
+
+        Returns
+        -------
+        Number
+            Result of the operation.
+        """
         operation = OperationFactory.create(self.operation_name)
         self.calculator.set_operation(operation)
         return self.calculator.perform_operation(self.a, self.b)
-    
-class HelpCommand(Command):
-    def execute(self) -> None:
-        print(
-            "Available commands: \n" \
-             + OperationFactory.list_items()
-             + ReplCommandFactory.list_items()
-        )
 
 class HistoryCommand(Command):
+    """Command to display the calculation history."""
+
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
     def execute(self) -> None:
         self.calculator.show_history()
 
+
 class ClearCommand(Command):
+    """Command to clear the calculation history."""
+
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
@@ -51,7 +83,10 @@ class ClearCommand(Command):
         self.calculator.clear_history()
         print("Cleared history.")
 
+
 class UndoCommand(Command):
+    """Command to undo the last calculation."""
+
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
@@ -61,7 +96,10 @@ class UndoCommand(Command):
         else:
             print("Nothing to undo")
 
+
 class RedoCommand(Command):
+    """Command to redo the last undone calculation."""
+
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
@@ -71,7 +109,10 @@ class RedoCommand(Command):
         else:
             print("Nothing to redo")
 
+
 class SaveCommand(Command):
+    """Command to save calculation history to a file."""
+
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
@@ -82,7 +123,10 @@ class SaveCommand(Command):
         except Exception as e:
             print(f"Error saving history: {e}")
 
+
 class LoadCommand(Command):
+    """Command to load calculation history from a file."""
+
     def __init__(self, calculator: "Calculator"):
         self.calculator = calculator
 
@@ -93,7 +137,17 @@ class LoadCommand(Command):
         except Exception as e:
             print(f"Error loading history: {e}")
 
+
 class ExitCommand(Command):
+    """
+    Command to exit the calculator REPL.
+
+    Parameters
+    ----------
+    on_exit_command : Optional[Command], default=None
+        Command to execute before exiting (e.g., save command).
+    """
+
     def execute(self, on_exit_command: Optional[Command] = None) -> None:
 
         if on_exit_command:
@@ -111,6 +165,11 @@ class ExitCommand(Command):
         sys.exit()
 
 class ReplCommandFactory(FactoryBase):
+    """
+    Factory to create REPL commands dynamically.
+
+    Registers commands like help, history, undo, redo, save, load, and exit.
+    """
     _item_dict = {
         'help' : {
             '_cls' : HelpCommand,
