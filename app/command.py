@@ -62,6 +62,15 @@ class CalculationCommand(Command):
         operation = OperationFactory.create(self.operation_name)
         self.calculator.set_operation(operation)
         return self.calculator.perform_operation(self.a, self.b)
+    
+class HelpCommand(Command):
+    """Command to display the available commands."""
+    def execute(self) -> None:
+        print(
+            "Available commands: \n" \
+             + OperationFactory.list_items()
+             + ReplCommandFactory.list_items()
+        )
 
 class HistoryCommand(Command):
     """Command to display the calculation history."""
