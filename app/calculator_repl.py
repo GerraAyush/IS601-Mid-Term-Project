@@ -1,4 +1,5 @@
 # Python Modules
+import re
 import logging
 
 # Datatypes
@@ -83,6 +84,11 @@ class CalculatorRepl:
             try:
                 # Read user command and remove surrounding whitespace
                 user_command : str = input("\nEnter the operation you want to perform: ").strip()
+
+                # Ignore arrow keys / terminal control sequences
+                user_command = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', user_command)
+                if not user_command:
+                    continue
 
                 result: Optional[str | Number] = None
 
@@ -170,10 +176,14 @@ class CalculatorRepl:
             try:
                 user_input = input(f"Enter operand#{len(operands) + 1}: ").strip()
 
+                user_input = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', user_input)
+                if not user_input:
+                    continue
+                
                 # Convert input to float if it contains a decimal point,
                 # otherwise convert to integer
                 operands.append(float(user_input) if '.' in user_input else int(user_input))
-            except :
+            except ValueError as e:
                 raise OperationError(f"Invalid operand value: {user_input}")
         return operands
 

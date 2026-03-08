@@ -355,3 +355,28 @@ def test_setup_colorama_calls_setup():
         repl = CalculatorRepl(calculator, invoker)
 
     mock_console.setup.assert_called_once_with(repl.config.color_text)
+
+def test_repl_ignores_escape_sequence(calculator):
+    inputs = iter([
+        "\x1b[A",  # becomes "" after regex -> continue
+        "exit"
+    ])
+
+    with patch("builtins.input", side_effect=lambda _: next(inputs)), \
+         patch("sys.exit", side_effect=SystemExit), \
+         patch("app.calculator_repl.Calculator", return_value=calculator):
+        calculator_repl()
+
+def test_repl_ignores_operand_escape_sequence(calculator):
+    inputs = iter([
+        "add",
+        "\x1b[A",     # becomes "" after regex -> continue
+        "1",
+        "2",
+        "exit"
+    ])
+
+    with patch("builtins.input", side_effect=lambda _: next(inputs)), \
+         patch("sys.exit", side_effect=SystemExit), \
+         patch("app.calculator_repl.Calculator", return_value=calculator):
+        calculator_repl()
